@@ -1,5 +1,5 @@
 /* Service Worker — Estúdio Marquesani Club */
-const CACHE = 'marquesani-club-v1';
+const CACHE = 'marquesani-club-v8';
 const ASSETS = [
   './',
   './index.html',
