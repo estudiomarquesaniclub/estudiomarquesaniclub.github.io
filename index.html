@@ -54,7 +54,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .sidebar>*{position:relative;z-index:1}
 .brand{display:flex;align-items:center;gap:11px;padding:4px 6px 16px;margin-bottom:6px;
   border-bottom:1px solid var(--line)}
-.brand-logo{width:44px;height:44px;border-radius:11px;flex:none;
+.brand-logo{width:46px;height:46px;border-radius:50%;overflow:hidden;flex:none;
   background:radial-gradient(circle at 30% 25%,#222222,#070707);
   border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;
   color:var(--gold2);font-family:var(--display);font-weight:400;font-size:19px;line-height:1;letter-spacing:1px;
@@ -214,7 +214,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 <!-- ============ SIDEBAR ============ -->
 <aside class="sidebar">
   <div class="brand">
-    <div class="brand-logo">TC</div>
+    <div class="brand-logo"><img src="logo.png" alt="Tattoo Club"></div>
     <div class="brand-txt">
       <h1>TATTOO CLUB</h1>
       <small>Assinaturas</small>
@@ -338,20 +338,21 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 <style>
 #loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(120% 80% at 50% 0,rgba(255,255,255,.06),transparent 60%),var(--bg)}
 .login-card{width:100%;max-width:360px;text-align:center}
-.login-logo{width:66px;height:66px;border-radius:16px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:2px;color:var(--gold2);background:radial-gradient(circle at 30% 25%,#232323,#050505);border:1.5px solid var(--gold);box-shadow:var(--glow)}
+.login-logo{width:104px;height:104px;border-radius:50%;overflow:hidden;margin:0 auto 14px;background:#efefef;border:2px solid var(--gold);box-shadow:var(--glow)}
 .login-card h1{font-family:var(--display);font-weight:400;letter-spacing:2px;font-size:26px;margin-bottom:2px}
 .login-card .sub{color:var(--muted);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:22px}
 .login-err{color:var(--red);font-size:13px;min-height:18px;margin:6px 0}
 #subScreen{min-height:100vh;display:flex;flex-direction:column}
 .sub-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);background:rgba(11,9,6,.9);backdrop-filter:blur(10px)}
-.sub-top .lg{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--display);color:var(--gold2);border:1.5px solid var(--gold);font-size:15px;letter-spacing:1px}
+.sub-top .lg{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;border:1.5px solid var(--gold)}
 .sub-top h2{font-family:var(--display);font-weight:400;letter-spacing:1px;font-size:18px;flex:1}
 .sub-wrap{max-width:560px;width:100%;margin:0 auto;padding:20px 18px 60px}
+.brand-logo img,.login-logo img,.sub-top .lg img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 
 <div id="loginScreen" style="display:none">
   <div class="login-card">
-    <div class="login-logo">TC</div>
+    <div class="login-logo"><img src="logo.png" alt="Tattoo Club"></div>
     <h1>TATTOO CLUB</h1>
     <div class="sub">Acesso</div>
     <label class="f" style="text-align:left"><span>E-mail</span>
@@ -365,7 +366,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 
 <div id="subScreen" style="display:none">
   <div class="sub-top">
-    <div class="lg">TC</div>
+    <div class="lg"><img src="logo.png" alt="Tattoo Club"></div>
     <h2 id="subHello">Olá</h2>
     <button class="btn danger sm" onclick="doLogout()">Sair</button>
   </div>
