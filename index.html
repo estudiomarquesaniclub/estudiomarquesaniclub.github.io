@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#0d0d0d">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -14,11 +14,11 @@
 <title>Tattoo Club</title>
 <style>
 :root{
-  --bg:#1a1a1a; --surface:#232323; --surface2:#2c2c2c; --line:#3d3d3d;
-  --txt:#e8e8e8; --muted:#9a9a9a; --gold:#c8c8c8; --gold2:#dedede;
+  --bg:#0d0d0d; --surface:#171717; --surface2:#1f1f1f; --line:#2f2a1e;
+  --txt:#f0ead9; --muted:#9c9384; --gold:#d4af37; --gold2:#f2d27a;
   --green:#e8e8e8; --red:#dcdcdc; --amber:#e8e8e8; --blue:#dcdcdc;
   --radius:12px; --shadow:0 14px 40px rgba(0,0,0,.6);
-  --glow:0 0 18px rgba(255,255,255,.28); --glow-soft:0 0 11px rgba(255,255,255,.16);
+  --glow:0 0 15px rgba(212,175,55,.32); --glow-soft:0 0 9px rgba(212,175,55,.2);
   --display:"Bebas Neue","Oswald","Impact","Haettenschweiler","Arial Narrow",sans-serif;
   --sidebar-w:244px;
   --scales:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M13 0 L26 13 L13 26 L0 13 Z' fill='none' stroke='%23ffffff' stroke-opacity='0.5' stroke-width='1'/%3E%3C/svg%3E");
@@ -48,11 +48,7 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .sidebar>*{position:relative;z-index:1}
 .brand{display:flex;align-items:center;gap:11px;padding:4px 6px 16px;margin-bottom:6px;
   border-bottom:1px solid var(--line)}
-.brand-logo{width:46px;height:46px;border-radius:50%;overflow:hidden;flex:none;
-  background:radial-gradient(circle at 30% 25%,#222222,#070707);
-  border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;
-  color:var(--gold2);font-family:var(--display);font-weight:400;font-size:19px;line-height:1;letter-spacing:1px;
-  box-shadow:none}
+.brand-logo{width:46px;height:46px;border-radius:12px;overflow:hidden;flex:none}
 .brand-txt h1{font-family:var(--display);font-weight:400;font-size:21px;letter-spacing:1.5px;
   color:var(--gold2)}
 .brand-txt small{color:var(--muted);font-size:9.5px;letter-spacing:4px;text-transform:uppercase;font-weight:700}
@@ -135,13 +131,13 @@ input.i:focus,select.i:focus,textarea.i:focus{outline:none;border-color:var(--go
 
 /* BADGE */
 .badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
-.b-flash{background:rgba(255,255,255,.14);color:#d6d6d6}
-.b-custom{background:rgba(255,255,255,.2);color:#ececec}
-.b-signature{background:rgba(255,255,255,.24);color:#f7f7f7}
-.b-black{background:rgba(255,255,255,.26);color:#e6e6e6;border:1px solid var(--gold)}
-.b-ok{background:rgba(255,255,255,.12);color:#e2e2e2}
-.b-warn{background:rgba(255,255,255,.18);color:#f0f0f0}
-.b-late{background:rgba(255,255,255,.2);color:#e6e6e6}
+.b-flash{background:rgba(212,175,55,.1);color:#cbb46a}
+.b-custom{background:rgba(212,175,55,.16);color:#e0c072}
+.b-signature{background:rgba(212,175,55,.2);color:#f2d27a}
+.b-black{background:rgba(212,175,55,.24);color:#f7dd8f;border:1px solid var(--gold)}
+.b-ok{background:rgba(154,196,126,.16);color:#b6d69a}
+.b-warn{background:rgba(224,165,63,.2);color:#f0c46f}
+.b-late{background:rgba(217,118,78,.22);color:#f0a888}
 .b-off{background:rgba(255,255,255,.1);color:#bcbcbc}
 
 /* MODAL */
@@ -166,7 +162,7 @@ input.i:focus,select.i:focus,textarea.i:focus{outline:none;border-color:var(--go
 
 .saldo-box{background:linear-gradient(135deg,#1c1c1c,#080808);border:1px solid var(--gold);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center}
 .saldo-box .lbl{color:var(--gold2);font-size:10.5px;text-transform:uppercase;letter-spacing:3px}
-.saldo-box .big{font-family:var(--display);font-weight:400;font-size:44px;margin:6px 0;color:#e8e8e8;letter-spacing:1px}
+.saldo-box .big{font-family:var(--display);font-weight:400;font-size:44px;margin:6px 0;color:var(--gold2);letter-spacing:1px}
 .saldo-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .saldo-breakdown div{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:9px;padding:8px 4px}
 .saldo-breakdown small{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.8px}
@@ -325,15 +321,15 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 
 <!-- ============ LOGIN / ASSINANTE ============ -->
 <style>
-#loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(120% 80% at 50% 0,rgba(255,255,255,.06),transparent 60%),var(--bg)}
+#loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(120% 80% at 50% 0,rgba(212,175,55,.08),transparent 60%),var(--bg)}
 .login-card{width:100%;max-width:360px;text-align:center}
-.login-logo{width:104px;height:104px;border-radius:50%;overflow:hidden;margin:0 auto 14px;background:#efefef;border:2px solid var(--gold);box-shadow:var(--glow)}
+.login-logo{width:118px;height:118px;border-radius:26px;overflow:hidden;margin:0 auto 16px}
 .login-card h1{font-family:var(--display);font-weight:400;letter-spacing:2px;font-size:26px;margin-bottom:2px}
 .login-card .sub{color:var(--muted);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:22px}
 .login-err{color:var(--red);font-size:13px;min-height:18px;margin:6px 0}
 #subScreen{min-height:100vh;display:flex;flex-direction:column}
 .sub-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);background:rgba(11,9,6,.9);backdrop-filter:blur(10px)}
-.sub-top .lg{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;border:1.5px solid var(--gold)}
+.sub-top .lg{width:42px;height:42px;border-radius:11px;overflow:hidden;flex:none}
 .sub-top h2{font-family:var(--display);font-weight:400;letter-spacing:1px;font-size:18px;flex:1}
 .sub-wrap{max-width:560px;width:100%;margin:0 auto;padding:20px 18px 60px}
 .brand-logo img,.login-logo img,.sub-top .lg img{width:100%;height:100%;object-fit:cover;display:block}
