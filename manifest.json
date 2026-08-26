@@ -1,7 +1,7 @@
 {
-  "name": "Estúdio Marquesani Club",
-  "short_name": "Marquesani",
-  "description": "Controle de assinaturas do Estúdio Marquesani Club — planos, créditos, bônus e indicações.",
+  "name": "Tattoo Club",
+  "short_name": "Tattoo Club",
+  "description": "Controle de assinaturas do Tattoo Club — planos, créditos, bônus e indicações.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
