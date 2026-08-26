@@ -93,6 +93,9 @@ input,select,textarea{font-family:inherit;font-size:15px}
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden}
 .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);box-shadow:var(--glow)}
+.stat.click{cursor:pointer;transition:.15s}
+.stat.click:hover{border-color:rgba(255,255,255,.45);transform:translateY(-2px)}
+.stat.click .lbl{color:var(--gold2)}
 .stat .lbl{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:1.5px}
 .stat .val{font-family:var(--display);font-weight:400;font-size:30px;margin-top:4px;letter-spacing:.5px}
 .stat .val.gold{color:var(--gold2);text-shadow:var(--glow-soft)}
@@ -498,10 +501,10 @@ function renderDash(){
     if(p.ativo) mrr += (PLANOS[p.plano]?.valor||0);
   }
   document.getElementById('dashStats').innerHTML = `
-    <div class="stat"><div class="lbl">Assinantes ativos</div><div class="val gold">${ativos.length}</div></div>
-    <div class="stat"><div class="lbl">MRR previsto</div><div class="val green">${money0(mrr)}</div></div>
-    <div class="stat"><div class="lbl">Saldo em créditos</div><div class="val">${money0(saldoTotal)}</div></div>
-    <div class="stat"><div class="lbl">Bônus concedido</div><div class="val gold">${money0(bonusTotal)}</div></div>`;
+    <div class="stat click" onclick="openList('ativos')"><div class="lbl">Assinantes ativos ›</div><div class="val gold">${ativos.length}</div></div>
+    <div class="stat click" onclick="openList('mrr')"><div class="lbl">MRR previsto ›</div><div class="val green">${money0(mrr)}</div></div>
+    <div class="stat click" onclick="openList('saldo')"><div class="lbl">Saldo em créditos ›</div><div class="val">${money0(saldoTotal)}</div></div>
+    <div class="stat click" onclick="openList('bonus')"><div class="lbl">Bônus concedido ›</div><div class="val gold">${money0(bonusTotal)}</div></div>`;
 
   // MRR por plano
   const porPlano = {};
@@ -510,7 +513,7 @@ function renderDash(){
   for(const k of Object.keys(PLANOS)){
     const n=porPlano[k]||0; const pl=PLANOS[k];
     const receita=n*pl.valor;
-    mrrHtml += `<div class="mov"><div class="ico" style="background:rgba(255,255,255,.12)">💎</div>
+    mrrHtml += `<div class="mov" onclick="openList('plano:${k}')" style="cursor:pointer"><div class="ico" style="background:rgba(255,255,255,.12)">💎</div>
       <div class="d"><b>${pl.nome}</b><small>${n} assinante${n!==1?'s':''} · ${money0(pl.valor)}/mês</small></div>
       <div class="amt bonus">${money0(receita)}</div></div>`;
   }
@@ -529,6 +532,37 @@ function renderDash(){
         <span class="badge ${badge}">${s.label}</span></div>`;
     }).join('');
   }
+}
+
+/* ---------- Drill-down: abre a lista de quem são ---------- */
+function openList(kind){
+  let title='', items=[]; const all=DB.participantes.slice();
+  if(kind==='ativos'){ title='Assinantes ativos'; items=all.filter(p=>p.ativo); }
+  else if(kind==='mrr'){ title='Receita recorrente'; items=all.filter(p=>p.ativo); }
+  else if(kind==='saldo'){ title='Saldo em créditos'; items=all.filter(p=>saldoParticipante(p.id).saldo>0); }
+  else if(kind==='bonus'){ title='Bônus concedido'; items=all.filter(p=>saldoParticipante(p.id).bonus>0); }
+  else if(kind==='inad'){ title='Precisa de atenção'; items=all.filter(p=>{const s=statusInad(p);return s.code==='late'||s.code==='warn';}); }
+  else if(kind.indexOf('plano:')===0){ const k=kind.split(':')[1]; title='Plano '+(PLANOS[k]?PLANOS[k].nome:k); items=all.filter(p=>p.ativo&&p.plano===k); }
+  if(kind==='saldo') items.sort((a,b)=>saldoParticipante(b.id).saldo-saldoParticipante(a.id).saldo);
+  else if(kind==='bonus') items.sort((a,b)=>saldoParticipante(b.id).bonus-saldoParticipante(a.id).bonus);
+  else items.sort((a,b)=>a.nome.localeCompare(b.nome));
+  const rows = items.length ? items.map(p=>{
+    const s=saldoParticipante(p.id); const pl=PLANOS[p.plano]||PLANOS.FLASH; const st=statusInad(p);
+    let right, lbl;
+    if(kind==='mrr'||kind.indexOf('plano:')===0){ right=money0(pl.valor); lbl='/mês'; }
+    else if(kind==='bonus'){ right=money0(s.bonus); lbl='bônus'; }
+    else { right=money0(s.saldo); lbl='saldo'; }
+    const stB = st.code==='ok'?'b-ok':st.code==='warn'?'b-warn':st.code==='late'?'b-late':'b-off';
+    return `<div class="pitem" style="border-radius:11px" onclick="closeModal();openParticipant('${p.id}')">
+      <div class="avatar" style="width:40px;height:40px;font-size:15px;background:${avColor(p.id)}">${initials(p.nome)}</div>
+      <div class="info"><div class="nm">${esc(p.nome)}</div>
+        <div class="meta"><span class="badge ${pl.cor}">${pl.nome}</span><span class="badge ${stB}">${st.label}</span></div></div>
+      <div class="saldo"><b>${right}</b><small>${lbl}</small></div></div>`;
+  }).join('') : `<div class="empty" style="padding:30px"><div class="em">📭</div>Nenhum assinante aqui.</div>`;
+  document.getElementById('modalRoot').innerHTML=`
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><div class="modal-head"><h2>${title} · ${items.length}</h2><button class="xclose" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div style="display:flex;flex-direction:column;gap:9px">${rows}</div></div></div></div>`;
 }
 
 /* ============================================================
