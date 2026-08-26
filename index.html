@@ -317,6 +317,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
     <p class="help">Você está logado como administrador do clube.</p>
     <div class="chip" id="acctChip" style="margin-bottom:12px">📧 —</div>
     <div class="btn-row">
+      <button class="btn ghost sm" onclick="openChangePassword()">🔑 Trocar senha</button>
       <button class="btn sec sm" onclick="exportData()">⬇️ Exportar dados (backup)</button>
       <button class="btn danger sm" onclick="doLogout()">🚪 Sair</button>
     </div>
@@ -986,6 +987,33 @@ async function doLogin(){
 }
 async function doLogout(){ await sb.auth.signOut(); location.reload(); }
 
+/* ----- Trocar senha (dono e assinante) ----- */
+function openChangePassword(){
+  document.getElementById('modalRoot').innerHTML=`
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><div class="modal-head"><h2>Trocar senha</h2><button class="xclose" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <label class="f"><span>Nova senha *</span>
+        <input class="i" type="password" id="npNew" placeholder="mínimo 6 caracteres" autocomplete="new-password"></label>
+      <label class="f"><span>Repita a nova senha *</span>
+        <input class="i" type="password" id="npNew2" placeholder="repita a senha" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter')doChangePassword()"></label>
+      <div class="login-err" id="npErr" style="min-height:16px"></div>
+      <button class="btn" id="npBtn" onclick="doChangePassword()">Salvar nova senha</button>
+    </div></div></div>`;
+}
+async function doChangePassword(){
+  const a=document.getElementById('npNew').value, b=document.getElementById('npNew2').value;
+  const err=document.getElementById('npErr');
+  if((a||'').length<6){ err.textContent='A senha precisa ter ao menos 6 caracteres.'; return; }
+  if(a!==b){ err.textContent='As duas senhas não são iguais.'; return; }
+  const btn=document.getElementById('npBtn'); btn.disabled=true; btn.textContent='Salvando...';
+  const { error } = await sb.auth.updateUser({ password:a });
+  btn.disabled=false; btn.textContent='Salvar nova senha';
+  if(error){ err.textContent='Erro: '+error.message; return; }
+  closeModal(); toast('Senha alterada ✓');
+}
+
 /* ----- Tela do assinante (somente leitura) ----- */
 function renderSubscriber(){
   const p = DB.participantes[0];
@@ -1020,7 +1048,8 @@ function renderSubscriber(){
       <div style="margin-top:6px;font-size:11px;color:var(--muted)">Já descontado do seu saldo acima</div>
     </div>
     <div class="section-title">Seu histórico</div>
-    <div class="card" style="padding:6px 14px">${movHtml}</div>`;
+    <div class="card" style="padding:6px 14px">${movHtml}</div>
+    <button class="btn ghost sm" style="margin-top:14px" onclick="openChangePassword()">🔑 Trocar minha senha</button>`;
 }
 
 /* ----- Criar login do assinante (admin) ----- */
