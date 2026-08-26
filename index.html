@@ -1001,8 +1001,9 @@ function renderSubscriber(){
   const movHtml = ms.length? ms.map(m=>movRow(m)).join('') : `<div class="empty" style="padding:24px"><div class="em">📭</div>Nenhuma movimentação ainda.</div>`;
   if(hello) hello.textContent = 'Olá, '+((p.nome||'').split(' ')[0]||p.nome);
   box.innerHTML = `
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-      <span class="badge ${pl.cor}">${pl.nome} · ${money0(pl.valor)}/mês</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+      <span class="badge ${pl.cor}">Plano ${pl.nome}</span>
+      <span style="color:var(--muted);font-size:12px">Mensalidade ${money0(pl.valor)}/mês</span>
     </div>
     <div class="saldo-box">
       <div class="lbl">Seu saldo disponível</div>
@@ -1012,7 +1013,11 @@ function renderSubscriber(){
         <div><small>Bônus</small><b style="color:var(--gold2)">${money0(s.bonus)}</b></div>
         <div><small>Indicações</small><b>${money0(s.indicacao)}</b></div>
       </div>
-      ${s.utilizado>0?`<div style="margin-top:10px;font-size:12px;color:var(--muted)">Já utilizado: ${money(s.utilizado)}</div>`:''}
+      <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:var(--muted);font-size:13px">✂️ Usado em tatuagens</span>
+        <b style="color:var(--red);font-size:15px">− ${money(s.utilizado)}</b>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--muted)">Já descontado do seu saldo acima</div>
     </div>
     <div class="section-title">Seu histórico</div>
     <div class="card" style="padding:6px 14px">${movHtml}</div>`;
