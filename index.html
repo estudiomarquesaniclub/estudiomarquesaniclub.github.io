@@ -206,7 +206,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" style="display:none">
 
 <!-- ============ SIDEBAR ============ -->
 <aside class="sidebar">
@@ -310,19 +310,17 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 <!-- ============ AJUSTES ============ -->
 <div id="view-mais" class="wrap view hidden">
   <div class="card">
-    <h2>💾 Backup & Dados</h2>
-    <p class="help">Seus dados ficam salvos neste dispositivo. Faça backup com frequência.</p>
+    <h2>👤 Conta (dono)</h2>
+    <p class="help">Você está logado como administrador do clube.</p>
+    <div class="chip" id="acctChip" style="margin-bottom:12px">📧 —</div>
     <div class="btn-row">
-      <button class="btn sec sm" onclick="exportData()">⬇️ Exportar backup</button>
-      <button class="btn sec sm" onclick="document.getElementById('importFile').click()">⬆️ Importar backup</button>
-      <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+      <button class="btn sec sm" onclick="exportData()">⬇️ Exportar dados (backup)</button>
+      <button class="btn danger sm" onclick="doLogout()">🚪 Sair</button>
     </div>
-    <hr class="sep">
-    <button class="btn danger sm" onclick="wipeAll()">🗑️ Apagar todos os dados</button>
   </div>
   <div class="card">
     <h2>ℹ️ Sobre</h2>
-    <p style="font-size:13px;color:var(--muted)">Sistema de controle de assinaturas do <b>Estúdio Marquesani Club</b>, baseado no regulamento oficial. Funciona offline. Adicione à tela inicial para usar como app.</p>
+    <p style="font-size:13px;color:var(--muted)">Sistema de controle de assinaturas do <b>Estúdio Marquesani Club</b>, baseado no regulamento oficial. Dados online (Supabase) — cada assinante acessa com login próprio e vê só o seu saldo.</p>
   </div>
 </div>
 
@@ -333,6 +331,45 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 <div id="modalRoot"></div>
 <div class="toast" id="toast"></div>
 
+<!-- ============ LOGIN / ASSINANTE ============ -->
+<style>
+#loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(120% 80% at 50% 0,rgba(255,255,255,.06),transparent 60%),var(--bg)}
+.login-card{width:100%;max-width:360px;text-align:center}
+.login-logo{width:66px;height:66px;border-radius:16px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:400;font-size:38px;color:var(--gold2);background:radial-gradient(circle at 30% 25%,#232323,#050505);border:1.5px solid var(--gold);box-shadow:var(--glow)}
+.login-card h1{font-family:var(--display);font-weight:400;letter-spacing:2px;font-size:26px;margin-bottom:2px}
+.login-card .sub{color:var(--muted);font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:22px}
+.login-err{color:var(--red);font-size:13px;min-height:18px;margin:6px 0}
+#subScreen{min-height:100vh;display:flex;flex-direction:column}
+.sub-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);background:rgba(11,9,6,.9);backdrop-filter:blur(10px)}
+.sub-top .lg{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--display);color:var(--gold2);border:1.5px solid var(--gold);font-size:20px}
+.sub-top h2{font-family:var(--display);font-weight:400;letter-spacing:1px;font-size:18px;flex:1}
+.sub-wrap{max-width:560px;width:100%;margin:0 auto;padding:20px 18px 60px}
+</style>
+
+<div id="loginScreen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">M</div>
+    <h1>MARQUESANI</h1>
+    <div class="sub">Club · Acesso</div>
+    <label class="f" style="text-align:left"><span>E-mail</span>
+      <input class="i" type="email" id="loginEmail" autocomplete="username" placeholder="voce@exemplo.com"></label>
+    <label class="f" style="text-align:left"><span>Senha</span>
+      <input class="i" type="password" id="loginPass" autocomplete="current-password" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()"></label>
+    <div class="login-err" id="loginErr"></div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<div id="subScreen" style="display:none">
+  <div class="sub-top">
+    <div class="lg">M</div>
+    <h2 id="subHello">Olá</h2>
+    <button class="btn danger sm" onclick="doLogout()">Sair</button>
+  </div>
+  <div class="sub-wrap" id="subBody"></div>
+</div>
+
+<script src="supabase.min.js"></script>
 <script>
 /* ============================================================
    ESTÚDIO MARQUESANI CLUB — dados + lógica
@@ -346,15 +383,34 @@ const PLANOS = {
 const CREDITO_INDICACAO = 50;
 const AVATAR_COLORS = ['#565656','#666666','#4a4a4a','#727272','#5c5c5c','#7d7d7d','#505050','#6b6b6b'];
 
-let DB = load();
+/* ---------- Supabase ---------- */
+const SB_URL = 'https://zpdyfgcbvdbhnntbgufb.supabase.co';
+const SB_KEY = 'sb_publishable_HloN3Kuw9HSOm_7ouK3KAA_Hbp_P71G';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let DB = {participantes:[], movimentos:[]};
+let ME = {user:null, isAdmin:false};
 let currentFilter = 'todos';
 let searchTerm = '';
 
-function load(){
-  try{ const d = JSON.parse(localStorage.getItem('marquesani_club')); if(d&&d.participantes) return d; }catch(e){}
-  return {participantes:[], movimentos:[]};
+/* mapeia linha do banco (snake_case) -> objeto do app (camelCase) */
+function mapPart(r){ return {id:r.id, user_id:r.user_id, nome:r.nome, contato:r.contato,
+  dataAdesao:r.data_adesao, plano:r.plano, formaPagamento:r.forma_pagamento, obs:r.obs, ativo:r.ativo}; }
+function mapMov(r){ return {id:r.id, partId:r.participante_id, tipo:r.tipo, competencia:r.competencia,
+  valorCredito:+r.valor_credito||0, valorBonus:+r.valor_bonus||0, valorIndicacao:+r.valor_indicacao||0,
+  valorUtilizado:+r.valor_utilizado||0, formaPagamento:r.forma_pagamento, indicado:r.indicado, obs:r.obs, data:r.data}; }
+
+/* carrega dados do Supabase (RLS filtra: admin vê tudo; assinante só o dele) */
+async function pull(){
+  const [rp, rm] = await Promise.all([
+    sb.from('participantes').select('*'),
+    sb.from('movimentos').select('*')
+  ]);
+  if(rp.error||rm.error){ console.error(rp.error||rm.error); toast('Erro ao carregar dados'); return false; }
+  DB.participantes = (rp.data||[]).map(mapPart);
+  DB.movimentos = (rm.data||[]).map(mapMov);
+  return true;
 }
-function save(){ localStorage.setItem('marquesani_club', JSON.stringify(DB)); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function money(v){ return 'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function money0(v){ return 'R$ '+(v||0).toLocaleString('pt-BR',{maximumFractionDigits:0}); }
@@ -595,28 +651,29 @@ function pickPlan(k){
   window._pickPlan=k;
   document.querySelectorAll('#fPlanos .plan-opt').forEach(el=>el.classList.toggle('on', el.dataset.plan===k));
 }
-function saveParticipant(id){
+async function saveParticipant(id){
   const nome=document.getElementById('fNome').value.trim();
   if(!nome){ toast('Informe o nome'); return; }
-  const data={
+  const row={
     nome, contato:document.getElementById('fContato').value.trim(),
-    dataAdesao:document.getElementById('fAdesao').value||todayISO(),
+    data_adesao:document.getElementById('fAdesao').value||todayISO(),
     plano:window._pickPlan||'FLASH',
-    formaPagamento:document.getElementById('fPgto').value,
+    forma_pagamento:document.getElementById('fPgto').value,
     obs:document.getElementById('fObs').value.trim(),
     ativo:document.getElementById('fAtivo').checked
   };
-  if(id){ const p=DB.participantes.find(x=>x.id===id); Object.assign(p,data); }
-  else { data.id=uid(); DB.participantes.push(data); }
-  save(); closeModal();
+  const res = id ? await sb.from('participantes').update(row).eq('id',id)
+                 : await sb.from('participantes').insert(row);
+  if(res.error){ console.error(res.error); toast('Erro ao salvar'); return; }
+  await pull(); closeModal();
   toast(id?'Assinante atualizado':'Assinante cadastrado ✓');
-  if(id) openParticipant(id); else { switchTab('part'); }
+  if(id) openParticipant(id); else switchTab('part');
 }
-function deleteParticipant(id){
+async function deleteParticipant(id){
   if(!confirm('Excluir este assinante e todo o histórico? Esta ação não pode ser desfeita.')) return;
-  DB.participantes=DB.participantes.filter(p=>p.id!==id);
-  DB.movimentos=DB.movimentos.filter(m=>m.partId!==id);
-  save(); closeModal(); switchTab('part'); toast('Assinante excluído');
+  const {error}=await sb.from('participantes').delete().eq('id',id);
+  if(error){ console.error(error); toast('Erro ao excluir'); return; }
+  await pull(); closeModal(); switchTab('part'); toast('Assinante excluído');
 }
 
 /* ============================================================
@@ -673,6 +730,11 @@ function openParticipant(id){
           <button class="btn ghost sm" style="flex:1" onclick="openIndicacao('${id}')">🎁 Indicação</button>
           <button class="btn sec sm" style="flex:1" onclick="openUtilizacao('${id}')">✂️ Usar crédito</button>
         </div>
+
+        <div class="section-title">Acesso do assinante</div>
+        ${p.user_id
+          ? `<div class="chip" style="margin-bottom:12px">🔓 Login ativo — o assinante já pode entrar e ver o saldo</div>`
+          : `<button class="btn ghost" style="margin-bottom:12px" onclick="openCreateAccess('${id}')">🔑 Criar login do assinante</button>`}
 
         <div class="section-title">Histórico</div>
         <div class="card" style="padding:6px 14px">${movHtml}</div>
@@ -739,17 +801,18 @@ function openPagamento(id){
     </div></div></div>`;
   document.getElementById('modalRoot').innerHTML=html;
 }
-function savePagamento(id){
+async function savePagamento(id){
   const comp=document.getElementById('pgComp').value;
   const valor=parseFloat(document.getElementById('pgValor').value)||0;
   const bonus=parseFloat(document.getElementById('pgBonus').value)||0;
   if(!comp){ toast('Informe a competência'); return; }
   if(valor<=0){ toast('Valor inválido'); return; }
   if(mesesPagos(id).includes(comp)){ if(!confirm('Já existe pagamento para '+fmtMonth(comp)+'. Registrar mesmo assim?')) return; }
-  DB.movimentos.push({id:uid(),partId:id,tipo:'pagamento',competencia:comp,
-    valorCredito:valor,valorBonus:bonus,valorIndicacao:0,valorUtilizado:0,
-    formaPagamento:document.getElementById('pgForma').value,data:document.getElementById('pgData').value||todayISO()});
-  save(); openParticipant(id); toast('Pagamento registrado ✓');
+  const {error}=await sb.from('movimentos').insert({participante_id:id,tipo:'pagamento',competencia:comp,
+    valor_credito:valor,valor_bonus:bonus,
+    forma_pagamento:document.getElementById('pgForma').value,data:document.getElementById('pgData').value||todayISO()});
+  if(error){ console.error(error); toast('Erro ao salvar'); return; }
+  await pull(); openParticipant(id); toast('Pagamento registrado ✓');
 }
 
 /* ---------- INDICAÇÃO ---------- */
@@ -769,13 +832,14 @@ function openIndicacao(id){
     </div></div></div>`;
   document.getElementById('modalRoot').innerHTML=html;
 }
-function saveIndicacao(id){
+async function saveIndicacao(id){
   const valor=parseFloat(document.getElementById('inValor').value)||0;
   if(valor<=0){ toast('Valor inválido'); return; }
-  DB.movimentos.push({id:uid(),partId:id,tipo:'indicacao',
-    valorCredito:0,valorBonus:0,valorIndicacao:valor,valorUtilizado:0,
-    indicado:document.getElementById('inNome').value.trim(),data:document.getElementById('inData').value||todayISO()});
-  save(); openParticipant(id); toast('Indicação registrada ✓');
+  const {error}=await sb.from('movimentos').insert({participante_id:id,tipo:'indicacao',
+    valor_indicacao:valor, indicado:document.getElementById('inNome').value.trim(),
+    data:document.getElementById('inData').value||todayISO()});
+  if(error){ console.error(error); toast('Erro ao salvar'); return; }
+  await pull(); openParticipant(id); toast('Indicação registrada ✓');
 }
 
 /* ---------- UTILIZAÇÃO ---------- */
@@ -796,29 +860,30 @@ function openUtilizacao(id){
     </div></div></div>`;
   document.getElementById('modalRoot').innerHTML=html;
 }
-function saveUtilizacao(id,saldo){
+async function saveUtilizacao(id,saldo){
   const valor=parseFloat(document.getElementById('utValor').value)||0;
   if(valor<=0){ toast('Valor inválido'); return; }
   if(valor>saldo+0.001){ if(!confirm(`Valor (${money(valor)}) maior que o saldo (${money(saldo)}). O regulamento diz que a diferença é paga à parte. Deseja registrar apenas o saldo disponível?`)){ return; } }
   const usar=Math.min(valor,saldo);
-  DB.movimentos.push({id:uid(),partId:id,tipo:'utilizacao',
-    valorCredito:0,valorBonus:0,valorIndicacao:0,valorUtilizado:usar,
-    obs:document.getElementById('utObs').value.trim(),data:document.getElementById('utData').value||todayISO()});
-  save(); openParticipant(id); toast('Crédito utilizado ✓');
+  const {error}=await sb.from('movimentos').insert({participante_id:id,tipo:'utilizacao',
+    valor_utilizado:usar, obs:document.getElementById('utObs').value.trim(),
+    data:document.getElementById('utData').value||todayISO()});
+  if(error){ console.error(error); toast('Erro ao salvar'); return; }
+  await pull(); openParticipant(id); toast('Crédito utilizado ✓');
 }
 
 /* ---------- CANCELAR BÔNUS (inadimplência) ---------- */
-function cancelBonus(id){
+async function cancelBonus(id){
   const s=saldoParticipante(id);
   if(s.bonus<=0){ toast('Sem bônus para cancelar'); return; }
   if(!confirm(`Cancelar ${money(s.bonus)} de crédito bônus por 2+ meses de inadimplência?\n\nO crédito pago e de indicação serão mantidos.`)) return;
-  DB.movimentos.push({id:uid(),partId:id,tipo:'cancelamento',
-    valorCredito:0,valorBonus:-s.bonus,valorIndicacao:0,valorUtilizado:0,
-    obs:'Cancelamento por inadimplência',data:todayISO()});
-  save(); openParticipant(id); toast('Bônus cancelado');
+  const {error}=await sb.from('movimentos').insert({participante_id:id,tipo:'cancelamento',
+    valor_bonus:-s.bonus, obs:'Cancelamento por inadimplência', data:todayISO()});
+  if(error){ console.error(error); toast('Erro'); return; }
+  await pull(); openParticipant(id); toast('Bônus cancelado');
 }
 
-function closeModal(){ document.getElementById('modalRoot').innerHTML=''; renderPart(); renderDash(); }
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; if(ME.isAdmin){ renderPart(); renderDash(); } }
 
 /* ============================================================
    BACKUP
@@ -828,21 +893,6 @@ function exportData(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='marquesani-club-backup-'+todayISO()+'.json'; a.click();
   toast('Backup exportado ✓');
-}
-function importData(e){
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result);
-    if(!d.participantes) throw 0;
-    if(!confirm('Isso substituirá todos os dados atuais. Continuar?')) return;
-    DB=d; save(); switchTab('dash'); toast('Backup importado ✓');
-  }catch(err){ toast('Arquivo inválido'); } };
-  r.readAsText(f); e.target.value='';
-}
-function wipeAll(){
-  if(!confirm('Apagar TODOS os dados? Esta ação é irreversível. Faça um backup antes.')) return;
-  if(!confirm('Tem certeza absoluta?')) return;
-  DB={participantes:[],movimentos:[]}; save(); switchTab('dash'); toast('Dados apagados');
 }
 
 /* ============================================================
@@ -855,8 +905,132 @@ document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click'
   b.className='btn ghost sm'; renderPart();
 }));
 
+/* ============================================================
+   AUTENTICAÇÃO / ROTEAMENTO
+   ============================================================ */
+function show(id,on){ const e=document.getElementById(id); if(e) e.style.display = on?'':'none'; }
+
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ routeLogin(); return; }
+  await afterLogin(session.user);
+}
+function routeLogin(){
+  document.querySelector('.app').style.display='none';
+  show('subScreen',false);
+  show('loginScreen',true);
+}
+async function afterLogin(user){
+  ME.user = user;
+  const { data:adm } = await sb.from('app_admins').select('user_id').eq('user_id',user.id).maybeSingle();
+  ME.isAdmin = !!adm;
+  show('loginScreen',false);
+  await pull();
+  if(ME.isAdmin){
+    show('subScreen',false);
+    document.querySelector('.app').style.display='';
+    const ac=document.getElementById('acctChip'); if(ac) ac.textContent='📧 '+(user.email||'');
+    switchTab('dash');
+  } else {
+    document.querySelector('.app').style.display='none';
+    renderSubscriber();
+    show('subScreen',true);
+  }
+}
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginErr');
+  if(!email||!pass){ err.textContent='Preencha e-mail e senha.'; return; }
+  err.textContent='';
+  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Entrando...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password:pass });
+  btn.disabled=false; btn.textContent='Entrar';
+  if(error){ err.textContent='E-mail ou senha inválidos.'; return; }
+  await afterLogin(data.user);
+}
+async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+
+/* ----- Tela do assinante (somente leitura) ----- */
+function renderSubscriber(){
+  const p = DB.participantes[0];
+  const box = document.getElementById('subBody');
+  const hello = document.getElementById('subHello');
+  if(!p){
+    if(hello) hello.textContent='Olá';
+    box.innerHTML = `<div class="empty"><div class="em">🔒</div>Sua conta ainda não está vinculada a uma assinatura.<br>Fale com o Estúdio Marquesani.</div>`;
+    return;
+  }
+  const s = saldoParticipante(p.id); const pl=PLANOS[p.plano]||PLANOS.FLASH;
+  const ms = movs(p.id).slice().reverse();
+  const movHtml = ms.length? ms.map(m=>movRow(m)).join('') : `<div class="empty" style="padding:24px"><div class="em">📭</div>Nenhuma movimentação ainda.</div>`;
+  if(hello) hello.textContent = 'Olá, '+((p.nome||'').split(' ')[0]||p.nome);
+  box.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      <span class="badge ${pl.cor}">${pl.nome} · ${money0(pl.valor)}/mês</span>
+    </div>
+    <div class="saldo-box">
+      <div class="lbl">Seu saldo disponível</div>
+      <div class="big">${money(s.saldo)}</div>
+      <div class="saldo-breakdown">
+        <div><small>Crédito pago</small><b>${money0(s.creditoPago)}</b></div>
+        <div><small>Bônus</small><b style="color:var(--gold2)">${money0(s.bonus)}</b></div>
+        <div><small>Indicações</small><b>${money0(s.indicacao)}</b></div>
+      </div>
+      ${s.utilizado>0?`<div style="margin-top:10px;font-size:12px;color:var(--muted)">Já utilizado: ${money(s.utilizado)}</div>`:''}
+    </div>
+    <div class="section-title">Seu histórico</div>
+    <div class="card" style="padding:6px 14px">${movHtml}</div>`;
+}
+
+/* ----- Criar login do assinante (admin) ----- */
+function openCreateAccess(id){
+  const p=DB.participantes.find(x=>x.id===id); if(!p) return;
+  const sugSenha='club'+Math.random().toString(36).slice(2,8);
+  const html=`
+  <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><div class="modal-head"><h2>Criar login</h2><button class="xclose" onclick="openParticipant('${id}')">✕</button></div>
+    <div class="modal-body">
+      <p class="help">Crie o acesso de <b>${esc(p.nome)}</b>. Ele poderá entrar e ver só o próprio saldo.</p>
+      <label class="f"><span>E-mail do assinante *</span>
+        <input class="i" type="email" id="caEmail" placeholder="email@exemplo.com" value="${esc(p.contato&&p.contato.includes('@')?p.contato:'')}"></label>
+      <label class="f"><span>Senha inicial *</span>
+        <input class="i" id="caPass" value="${sugSenha}"></label>
+      <div class="alert warn"><span>💡</span><div>Anote e entregue esses dados ao assinante. Ele pode trocar a senha depois.</div></div>
+      <button class="btn" id="caBtn" onclick="createAccess('${id}')">Criar acesso</button>
+    </div></div></div>`;
+  document.getElementById('modalRoot').innerHTML=html;
+}
+async function createAccess(id){
+  const email=document.getElementById('caEmail').value.trim().toLowerCase();
+  const pass=document.getElementById('caPass').value;
+  if(!email||!email.includes('@')){ toast('Informe um e-mail válido'); return; }
+  if((pass||'').length<6){ toast('Senha muito curta (mín. 6)'); return; }
+  const btn=document.getElementById('caBtn'); btn.disabled=true; btn.textContent='Criando...';
+  const tmp = supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:false, autoRefreshToken:false } });
+  const { data, error } = await tmp.auth.signUp({ email, password:pass });
+  if(error || !data.user){ btn.disabled=false; btn.textContent='Criar acesso'; toast('Erro: '+((error&&error.message)||'não criado')); return; }
+  const { error:e2 } = await sb.from('participantes').update({ user_id:data.user.id }).eq('id',id);
+  if(e2){ btn.disabled=false; btn.textContent='Criar acesso'; console.error(e2); toast('Criado, mas falha ao vincular'); return; }
+  await pull();
+  document.getElementById('modalRoot').innerHTML=`
+  <div class="modal-bg" onclick="if(event.target===this){closeModal();openParticipant('${id}')}">
+    <div class="modal"><div class="modal-head"><h2>Acesso criado ✓</h2><button class="xclose" onclick="closeModal();openParticipant('${id}')">✕</button></div>
+    <div class="modal-body">
+      <p class="help">Entregue estes dados ao assinante:</p>
+      <div class="saldo-box" style="text-align:left">
+        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">E-mail</div>
+        <div style="font-weight:700;margin-bottom:10px;word-break:break-all">${esc(email)}</div>
+        <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Senha</div>
+        <div style="font-weight:700">${esc(pass)}</div>
+      </div>
+      <p class="help" style="margin-top:12px">Ele acessa pelo mesmo link do app e verá apenas o próprio saldo.</p>
+      <button class="btn" onclick="closeModal();openParticipant('${id}')">Ok, entendi</button>
+    </div></div></div>`;
+}
+
 /* INIT */
-renderDash();
+boot();
 
 /* ---------- PWA: registra service worker ---------- */
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){

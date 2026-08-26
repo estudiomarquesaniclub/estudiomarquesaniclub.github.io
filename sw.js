@@ -1,9 +1,10 @@
 /* Service Worker — Estúdio Marquesani Club */
-const CACHE = 'marquesani-club-v8';
+const CACHE = 'marquesani-club-v9';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './supabase.min.js',
   './icon-192.png',
   './icon-512.png',
   './icon-180.png'
