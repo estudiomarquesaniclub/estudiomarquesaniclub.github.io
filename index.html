@@ -321,7 +321,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 
 <!-- ============ LOGIN / ASSINANTE ============ -->
 <style>
-#loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(120% 80% at 50% 0,rgba(212,175,55,.08),transparent 60%),var(--bg)}
+#loginScreen,#forgotScreen,#recoveryScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(120% 80% at 50% 0,rgba(212,175,55,.08),transparent 60%),var(--bg)}
+#recoveryScreen{z-index:70}
 .login-card{width:100%;max-width:360px;text-align:center}
 .login-logo{width:118px;height:118px;border-radius:26px;overflow:hidden;margin:0 auto 16px}
 .login-card h1{font-family:var(--display);font-weight:400;letter-spacing:2px;font-size:26px;margin-bottom:2px}
@@ -346,6 +347,35 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
       <input class="i" type="password" id="loginPass" autocomplete="current-password" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()"></label>
     <div class="login-err" id="loginErr"></div>
     <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+    <div style="margin-top:14px"><a href="#" onclick="showForgot(true);return false" style="font-size:13px;color:var(--gold2)">Esqueci minha senha</a></div>
+  </div>
+</div>
+
+<div id="forgotScreen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo"><img src="logo.png" alt="Tattoo Club"></div>
+    <h1>TATTOO CLUB</h1>
+    <div class="sub">Recuperar senha</div>
+    <p class="help" style="text-align:center">Informe seu e-mail. Enviaremos um link para você criar uma nova senha.</p>
+    <label class="f" style="text-align:left"><span>E-mail</span>
+      <input class="i" type="email" id="forgotEmail" autocomplete="username" placeholder="voce@exemplo.com" onkeydown="if(event.key==='Enter')doForgot()"></label>
+    <div class="login-err" id="forgotMsg"></div>
+    <button class="btn" id="forgotBtn" onclick="doForgot()">Enviar link de redefinição</button>
+    <div style="margin-top:14px"><a href="#" onclick="showForgot(false);return false" style="font-size:13px;color:var(--muted)">← Voltar ao login</a></div>
+  </div>
+</div>
+
+<div id="recoveryScreen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo"><img src="logo.png" alt="Tattoo Club"></div>
+    <h1>TATTOO CLUB</h1>
+    <div class="sub">Definir nova senha</div>
+    <label class="f" style="text-align:left"><span>Nova senha</span>
+      <input class="i" type="password" id="recNew" placeholder="mínimo 6 caracteres" autocomplete="new-password"></label>
+    <label class="f" style="text-align:left"><span>Repita a nova senha</span>
+      <input class="i" type="password" id="recNew2" placeholder="repita a senha" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRecovery()"></label>
+    <div class="login-err" id="recMsg"></div>
+    <button class="btn" id="recBtn" onclick="doRecovery()">Salvar nova senha</button>
   </div>
 </div>
 
@@ -931,7 +961,9 @@ document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click'
 function show(id,on){ const e=document.getElementById(id); if(e) e.style.display = on?'':'none'; }
 
 async function boot(){
+  if(RECOVERING){ showRecovery(); return; }
   const { data:{ session } } = await sb.auth.getSession();
+  if(RECOVERING){ showRecovery(); return; }
   if(!session){ routeLogin(); return; }
   await afterLogin(session.user);
 }
@@ -970,6 +1002,48 @@ async function doLogin(){
   await afterLogin(data.user);
 }
 async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+
+/* ----- Esqueci minha senha (envio do link) ----- */
+function showForgot(on){
+  show('loginScreen', !on);
+  show('forgotScreen', on);
+  const f=document.getElementById('forgotMsg'); if(f) f.textContent='';
+}
+async function doForgot(){
+  const email=document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const msg=document.getElementById('forgotMsg');
+  if(!email){ msg.style.color='var(--red)'; msg.textContent='Informe seu e-mail.'; return; }
+  const btn=document.getElementById('forgotBtn'); btn.disabled=true; btn.textContent='Enviando...';
+  const redir = location.origin + location.pathname;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: redir });
+  btn.disabled=false; btn.textContent='Enviar link de redefinição';
+  if(error){ msg.style.color='var(--red)'; msg.textContent='Erro: '+error.message; return; }
+  msg.style.color='var(--green)';
+  msg.textContent='Enviado! Veja seu e-mail (e o spam) e clique no link para criar a nova senha.';
+}
+
+/* ----- Redefinir senha ao voltar do link do e-mail ----- */
+let RECOVERING = (location.hash||'').indexOf('type=recovery')>=0;
+function showRecovery(){
+  RECOVERING=true;
+  const app=document.querySelector('.app'); if(app) app.style.display='none';
+  show('subScreen',false); show('loginScreen',false); show('forgotScreen',false);
+  show('recoveryScreen',true);
+}
+sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ showRecovery(); } });
+async function doRecovery(){
+  const a=document.getElementById('recNew').value, b=document.getElementById('recNew2').value;
+  const msg=document.getElementById('recMsg');
+  if((a||'').length<6){ msg.style.color='var(--red)'; msg.textContent='A senha precisa ter ao menos 6 caracteres.'; return; }
+  if(a!==b){ msg.style.color='var(--red)'; msg.textContent='As duas senhas não são iguais.'; return; }
+  const btn=document.getElementById('recBtn'); btn.disabled=true; btn.textContent='Salvando...';
+  const { error } = await sb.auth.updateUser({ password:a });
+  btn.disabled=false; btn.textContent='Salvar nova senha';
+  if(error){ msg.style.color='var(--red)'; msg.textContent='Erro: '+error.message; return; }
+  msg.style.color='var(--green)'; msg.textContent='Senha alterada! Redirecionando para o login...';
+  await sb.auth.signOut();
+  setTimeout(()=>{ location.href = location.origin + location.pathname; }, 1400);
+}
 
 /* ----- Trocar senha (dono e assinante) ----- */
 function openChangePassword(){
