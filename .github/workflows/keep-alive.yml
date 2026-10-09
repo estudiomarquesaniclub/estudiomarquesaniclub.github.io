@@ -1,0 +1,29 @@
+name: Keep Supabase Awake
+
+# Mantém o projeto Supabase ativo (evita a pausa por inatividade do plano grátis).
+# Faz um "ping" diário na API REST. A chave usada é a "publishable" (pública),
+# a mesma que já está no site — não é segredo.
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # todos os dias, 12:00 UTC (~09:00 BRT)
+    - cron: "0 0 * * *"    # e também 00:00 UTC, por redundância
+  workflow_dispatch: {}      # permite rodar manualmente pelo botão "Run workflow"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        env:
+          SUPABASE_URL: https://zpdyfgcbvdbhnntbgufb.supabase.co
+          SUPABASE_KEY: sb_publishable_HloN3Kuw9HSOm_7ouK3KAA_Hbp_P71G
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/participantes?select=id&limit=1")
+          echo "Ping Supabase -> HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "Aviso: resposta inesperada ($code). O projeto pode estar religando."
+          fi
