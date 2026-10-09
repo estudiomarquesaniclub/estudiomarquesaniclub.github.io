@@ -19,11 +19,21 @@ jobs:
           SUPABASE_URL: https://zpdyfgcbvdbhnntbgufb.supabase.co
           SUPABASE_KEY: sb_publishable_HloN3Kuw9HSOm_7ouK3KAA_Hbp_P71G
         run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "apikey: $SUPABASE_KEY" \
-            -H "Authorization: Bearer $SUPABASE_KEY" \
-            "$SUPABASE_URL/rest/v1/participantes?select=id&limit=1")
-          echo "Ping Supabase -> HTTP $code"
-          if [ "$code" != "200" ]; then
-            echo "Aviso: resposta inesperada ($code). O projeto pode estar religando."
+          ok=0
+          for n in 1 2 3 4 5 6; do
+            code=$(curl -s --max-time 30 --retry 2 --retry-delay 5 \
+              -o /dev/null -w "%{http_code}" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY" \
+              "$SUPABASE_URL/rest/v1/participantes?select=id&limit=1" || echo "000")
+            echo "Tentativa $n -> HTTP $code"
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep 15
+          done
+          if [ "$ok" = "1" ]; then
+            echo "Supabase ativo e respondendo (200)."
+          else
+            echo "Nao confirmou 200 agora (pode estar religando) - o ping ainda gera atividade."
           fi
+          # Nunca falha o job: o objetivo e so gerar atividade periodica.
+          exit 0
